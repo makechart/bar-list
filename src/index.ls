@@ -1,7 +1,8 @@
 module.exports =
   pkg:
     name: 'bar-list', version: '0.0.1'
-    extend: {name: "@makechart/base"}
+    # lite: 不帶 d3 的 base ( 見 @plotdb/chart utils )
+    extend: {name: "@makechart/base", path: "lite/index.html"}
     dependencies: [
       {url: "/assets/lib/ldview/main/index.min.js"}
     ]
@@ -14,7 +15,7 @@ module.exports =
     }
 
 mod = ({root, context, t}) ->
-  {chart,d3,debounce} = context
+  {chart,debounce} = context
   sample: ->
     raw: [0 to 10].map -> {name: it, value: (Math.random! * 100).toFixed(2)}
     binding:
@@ -76,6 +77,8 @@ mod = ({root, context, t}) ->
     @parsed.map (d,i) -> d._idx = i
 
   resize: ->
-    @extent = d3.extent @parsed.map -> it.size
-    @scale.x = d3.scaleLinear!domain [0, @extent.1] .range [0, 100]
+    # 同 d3.extent: 略過 null / NaN, 沒有值時是 [undefined, undefined]
+    vs = @parsed.map(-> it.size).filter -> it? and it >= it
+    @extent = if vs.length => [Math.min.apply(Math, vs), Math.max.apply(Math, vs)] else [undefined, undefined]
+    @scale.x = chart.utils.scale.linear!domain [0, @extent.1] .range [0, 100]
   render: -> @view.render!
